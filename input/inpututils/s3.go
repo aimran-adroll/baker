@@ -21,8 +21,12 @@ type S3Input struct {
 	svc s3iface.S3API
 }
 
-func NewS3Input(region, bucket string) *S3Input {
-	sess := session.New(&aws.Config{Region: aws.String(region)})
+func NewS3Input(region, bucket, endpoint string, s3forcepathstyle bool) *S3Input {
+	sess := session.New(&aws.Config{
+		Region:           aws.String(region),
+		Endpoint:         aws.String(endpoint),
+		S3ForcePathStyle: aws.Bool(s3forcepathstyle),
+	})
 	svc := s3.New(sess)
 
 	s := &S3Input{

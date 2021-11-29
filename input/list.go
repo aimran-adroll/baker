@@ -56,9 +56,11 @@ var ListDesc = baker.InputDesc{
 var stdin = os.Stdin // for tests
 
 type ListConfig struct {
-	Files     []string `help:"List of log-files, directories and/or list-files to process" default:"[\"-\"]"`
-	MatchPath string   `help:"regexp to filter files in specified directories" default:".*\\.log\\.gz"`
-	Region    string   `help:"AWS Region for fetching from S3" default:"us-west-2"`
+	Files            []string `help:"List of log-files, directories and/or list-files to process" default:"[\"-\"]"`
+	MatchPath        string   `help:"regexp to filter files in specified directories" default:".*\\.log\\.gz"`
+	Region           string   `help:"AWS Region for fetching from S3" default:"us-west-2"`
+	AwsEndpoint      string   `help:"Optional endpoint URL (hostname only or fully qualified URI)"`
+	S3ForcePathStyle bool     `help:"Set this to true to force the request to use path-style addressing, default: false"`
 }
 
 func (cfg *ListConfig) fillDefaults() {
@@ -178,7 +180,11 @@ func NewList(cfg baker.InputParams) (baker.Input, error) {
 	dcfg := cfg.DecodedConfig.(*ListConfig)
 	dcfg.fillDefaults()
 
-	s3end := s3.New(session.New(&aws.Config{Region: aws.String(dcfg.Region)}))
+	s3end := s3.New(session.New(&aws.Config{
+		Region:           aws.String(dcfg.Region),
+		Endpoint:         aws.String(dcfg.AwsEndpoint),
+		S3ForcePathStyle: aws.Bool(dcfg.S3ForcePathStyle),
+	}))
 	l := &List{
 		svc: s3end,
 		Cfg: dcfg,

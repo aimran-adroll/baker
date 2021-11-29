@@ -41,6 +41,8 @@ Supported formats (MessageFormat):
 type SQSConfig struct {
 	AwsRegion         string   `help:"AWS region to connect to" default:"us-west-2"`
 	Bucket            string   `help:"S3 Bucket to use if paths do not have one" default:""`
+	AwsEndpoint       string   `help:"Optional endpoint URL (hostname only or fully qualified URI)"`
+	S3ForcePathStyle  bool     `help:"Set this to true to force the request to use path-style addressing, default: false"`
 	QueuePrefixes     []string `help:"Prefixes of the names of the SQS queues to monitor" required:"true"`
 	MessageFormat     string   `help:"SQS message format. See help string for supported formats" default:"sns"`
 	MessageExpression string   `help:"The expression to extract an S3 path from arbitrary message formats"`
@@ -109,7 +111,11 @@ func NewSQS(cfg baker.InputParams) (baker.Input, error) {
 		}
 	}
 
-	sess, err := session.NewSession(&aws.Config{Region: aws.String(dcfg.AwsRegion)})
+	sess, err := session.NewSession(&aws.Config{
+		Region:           aws.String(dcfg.AwsRegion),
+		Endpoint:         aws.String(dcfg.AwsEndpoint),
+		S3ForcePathStyle: aws.Bool(dcfg.S3ForcePathStyle),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("SQS: can't create aws session: %v", err)
 	}
@@ -119,7 +125,7 @@ func NewSQS(cfg baker.InputParams) (baker.Input, error) {
 		return nil, fmt.Errorf("SQS: can't configure message parsing")
 	}
 	sqs := &SQS{
-		s3Input:    inpututils.NewS3Input(dcfg.AwsRegion, dcfg.Bucket),
+		s3Input:    inpututils.NewS3Input(dcfg.AwsRegion, dcfg.Bucket, dcfg.AwsEndpoint, dcfg.S3ForcePathStyle),
 		Cfg:        dcfg,
 		svc:        sqs.New(sess),
 		filepathRx: filepathRx,

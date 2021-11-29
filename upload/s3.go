@@ -40,15 +40,17 @@ var S3Desc = baker.UploadDesc{
 // All files received by the uploader should be absolute and rooted at
 // SourceBasePath.
 type S3Config struct {
-	SourceBasePath string        `help:"Base path used to consider the final S3 path." default:"/tmp/baker/ologs/"`
-	Region         string        `help:"S3 region to upload to" default:"us-east-1"`
-	Bucket         string        `help:"S3 bucket to upload to"  required:"true"`
-	Prefix         string        `help:"Prefix on the destination bucket" default:"/"`
-	StagingPath    string        `help:"Local staging area to copy files to before upload." default:"/tmp/baker/ologs/staging/"`
-	Retries        int           `help:"Number of retries before a failed upload" default:"3"`
-	Concurrency    int           `help:"Number of concurrent workers" default:"5"`
-	Interval       time.Duration `help:"Period at which the source path is scanned" default:"15s"`
-	ExitOnError    bool          `help:"Exit at first error, instead of logging all errors" default:"false"`
+	SourceBasePath   string        `help:"Base path used to consider the final S3 path." default:"/tmp/baker/ologs/"`
+	Region           string        `help:"S3 region to upload to" default:"us-east-1"`
+	Bucket           string        `help:"S3 bucket to upload to"  required:"true"`
+	AwsEndpoint      string        `help:"Optional endpoint URL (hostname only or fully qualified URI)"`
+	S3ForcePathStyle bool          `help:"Set this to true to force the request to use path-style addressing, default: false"`
+	Prefix           string        `help:"Prefix on the destination bucket" default:"/"`
+	StagingPath      string        `help:"Local staging area to copy files to before upload." default:"/tmp/baker/ologs/staging/"`
+	Retries          int           `help:"Number of retries before a failed upload" default:"3"`
+	Concurrency      int           `help:"Number of concurrent workers" default:"5"`
+	Interval         time.Duration `help:"Period at which the source path is scanned" default:"15s"`
+	ExitOnError      bool          `help:"Exit at first error, instead of logging all errors" default:"false"`
 }
 
 func (cfg *S3Config) fillDefaults() error {
@@ -113,7 +115,11 @@ func NewS3(cfg baker.UploadParams) (baker.Upload, error) {
 		return nil, fmt.Errorf("staging path creation error: %v", err)
 	}
 
-	s3svc := s3.New(session.New(&aws.Config{Region: aws.String(dcfg.Region)}))
+	s3svc := s3.New(session.New(&aws.Config{
+		Region:           aws.String(dcfg.Region),
+		Endpoint:         aws.String(dcfg.AwsEndpoint),
+		S3ForcePathStyle: aws.Bool(dcfg.S3ForcePathStyle),
+	}))
 	return &S3{
 		Cfg:      dcfg,
 		uploader: s3manager.NewUploaderWithClient(s3svc),
