@@ -21,8 +21,14 @@ type S3Input struct {
 	svc s3iface.S3API
 }
 
-func NewS3Input(region, bucket string) *S3Input {
-	sess := session.New(&aws.Config{Region: aws.String(region)})
+func NewS3Input(region, bucket string, cfg ...*aws.Config) *S3Input {
+
+	//Merge additional aws.Configs
+	var cl []*aws.Config
+	cl = append(cl, &aws.Config{Region: aws.String(region)})
+	cl = append(cl, cfg...)
+	sess := session.New(cl...)
+
 	svc := s3.New(sess)
 
 	s := &S3Input{
