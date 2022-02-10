@@ -23,7 +23,7 @@ type S3Input struct {
 
 func NewS3Input(region, bucket string, cfg ...*aws.Config) *S3Input {
 
-	//Merge additional aws.Configs
+	//Merge existing configs with additional aws.Configs
 	var cl []*aws.Config
 	cl = append(cl, &aws.Config{Region: aws.String(region)})
 	cl = append(cl, cfg...)
